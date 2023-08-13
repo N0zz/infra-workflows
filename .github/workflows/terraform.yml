@@ -34,11 +34,13 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: TFLint
+        if: always()
         run: |
           set -e
           tflint --disable-rule=terraform_module_pinned_source
 
       - name: Terraform FMT
+        if: always()
         run: |
           set -e
           fmt_files=$(terraform fmt -recursive)
@@ -49,6 +51,7 @@ jobs:
           fi
 
       - name: Terraform DOCs
+        if: always()
         run: |
           set -e
           terraform-docs markdown --output-mode inject --read-comments --show all --hide-empty --required --sensitive --type --output-file README.md .
