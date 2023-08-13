@@ -1,0 +1,61 @@
+name: Terraform Tests
+
+on:
+  pull_request:
+    branches: [ "main" ]
+
+  workflow_dispatch:
+  workflow_call:
+
+jobs:
+
+  terraform_tests:
+    runs-on: ubuntu-latest
+    name: "Terraform Tests"
+    steps:
+      - name: Setup dependencies
+        run: |
+          echo "TODO: prepare tf testing image to have all dependencies already installed."
+          echo "Update apt repo & install prerequirements..."
+          sudo apt-get update
+          sudo apt-get install -y wget curl unzip lsb-release gnupg software-properties-common
+          echo "Install tflint..."
+          curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
+          echo "Install terraform-docs..."
+          curl -Lo ./terraform-docs.tar.gz https://github.com/terraform-docs/terraform-docs/releases/download/v0.16.0/terraform-docs-v0.16.0-$(uname)-amd64.tar.gz
+          tar -xzf terraform-docs.tar.gz
+          chmod +x terraform-docs
+          sudo mv terraform-docs /usr/local/bin/terraform-docs
+          echo "Install terraform..."
+          wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+          sudo apt-get update && sudo apt-get install -y terraform
+
+      - uses: actions/checkout@v3
+
+      - name: TFLint
+        if: always()
+        run: |
+          set -e
+          tflint --disable-rule=terraform_module_pinned_source
+
+      - name: Terraform FMT
+        if: always()
+        run: |
+          set -e
+          fmt_files=$(terraform fmt -recursive)
+          if [[ "${fmt_files}" != "" ]]; then
+            echo "Terraform FMT changed some files!"
+            echo "${fmt_files}"
+            exit 1
+          fi
+
+      - name: Terraform DOCs
+        if: always()
+        run: |
+          set -e
+          terraform-docs markdown --output-mode inject --read-comments --show all --hide-empty --required --sensitive --type --output-file README.md .
+          if [[ $(git diff README.md) != "" ]]; then
+            echo "Terraform DOCs updated README.md"
+            exit 1
+          fi
