@@ -48,8 +48,11 @@ jobs:
       - name: Terraform DOCs
         run: |
           set -e
+          cp README.md README.md.tmp
           terraform-docs markdown --output-mode inject --read-comments --show all --hide-empty --required --sensitive --type --output-file README.md .
-          if [[ $(git diff README.md) != "" ]]; then
+          readme_diff=$(diff README.md README.md.tmp)
+          rm README.md.tmp
+          if [[ ${readme_diff} != "" ]]; then
             echo "Terraform DOCs updated README.md"
             exit 1
           fi
