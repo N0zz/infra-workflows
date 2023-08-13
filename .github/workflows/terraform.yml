@@ -32,19 +32,22 @@ jobs:
 
       - name: TFLint
         run: |
+          set -e
           tflint --disable-rule=terraform_module_pinned_source
 
       - name: Terraform FMT
         run: |
-            fmt_files=$(terraform fmt -recursive)
-            if [[ "${fmt_files}" != "" ]]; then
-              echo "Terraform FMT changed some files!"
-              echo "${fmt_files}"
-              exit 1
-            fi
+          set -e
+          fmt_files=$(terraform fmt -recursive)
+          if [[ "${fmt_files}" != "" ]]; then
+            echo "Terraform FMT changed some files!"
+            echo "${fmt_files}"
+            exit 1
+          fi
 
       - name: Terraform DOCs
         run: |
+          set -e
           terraform-docs markdown --output-mode inject --read-comments --show all --hide-empty --required --sensitive --type --output-file README.md .
           if [[ $(git diff README.md) != "" ]]; then
             echo "Terraform DOCs updated README.md"
